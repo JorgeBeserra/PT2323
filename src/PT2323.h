@@ -4,7 +4,7 @@
 #include "Wire.h"
 
 
-#define PT2323_LIB_VERSION                   (F("1.0.0"))
+#define PT2323_LIB_VERSION                   (F("1.0.1"))
 
 
 class PT2323
@@ -12,7 +12,8 @@ class PT2323
 public:
   PT2323(TwoWire *wire = &Wire);
 
-  bool    begin();
+  // Call Wire.begin() first. Use a longer delay if Cref requires it.
+  bool    begin(uint32_t startupDelayMs = 300);
   bool    isConnected();
   uint8_t getAddress();
 
@@ -43,7 +44,7 @@ private:
   int     write(const uint8_t value);
 
   TwoWire  *_wire;
-  uint8_t  _address   = 0x94;
+  uint8_t  _address   = 0x4A;
 
   uint8_t  _channel   = 0;
   bool     _surround  = false;

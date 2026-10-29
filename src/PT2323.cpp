@@ -5,12 +5,19 @@ PT2323::PT2323(TwoWire *wire)
   _wire = wire;
 }
 
-bool PT2323::begin()
+bool PT2323::begin(uint32_t startupDelayMs)
 {
-  if (! isConnected()) return false;
-  setChannel(0);
-  //  TODO initialize defaults.
-  return true;
+  if (_wire == nullptr) { _error = 4; return false; }
+  // Datasheet: at least 300 ms after power-up for Cref = 10 uF.
+  delay(startupDelayMs);
+  _wire->setClock(100000);
+  if (!isConnected()) return false;
+  // Keep outputs muted while selecting deterministic startup settings.
+  if (!muteAll(true)) return false;
+  if (!setChannel(0)) return false;
+  if (!setSurround(false)) return false;
+  if (!setMixedChannel(false)) return false;
+  return muteAll(false);
 }
 
 uint8_t PT2323::getAddress()
@@ -20,8 +27,10 @@ uint8_t PT2323::getAddress()
 
 bool PT2323::isConnected()
 {
+  if (_wire == nullptr) { _error = 4; return false; }
   _wire->beginTransmission(_address);
-  return ( _wire->endTransmission() == 0);
+  _error = _wire->endTransmission();
+  return _error == 0;
 }
 
 //
@@ -106,7 +115,7 @@ bool PT2323::muteAll(bool mute)
 bool PT2323::setSurround(bool enable)
 {
   uint8_t cmd = 0xD0;
-  if (enable) cmd |= 0x01;
+  if (!enable) cmd |= 0x01;
   if (write(cmd) == 0)
   {
     _surround = enable;
@@ -122,7 +131,7 @@ bool PT2323::getSurround()
 
 bool PT2323::setMixedChannel(bool six_db)
 {
-  uint8_t cmd = 0xFE;
+  uint8_t cmd = 0x90;
   if (six_db) cmd |= 0x01;
   if (write(cmd) == 0)
   {
@@ -146,9 +155,11 @@ int PT2323::getLastError()
 
 int PT2323::write(uint8_t cmd)
 {
+  if (_wire == nullptr) { _error = 4; return _error; }
   _wire->beginTransmission(_address);
-  _wire->write(cmd);
+  const size_t written = _wire->write(cmd);
   _error = _wire->endTransmission();
+  if (written != 1 && _error == 0) _error = 1;
   return _error;
 }
 

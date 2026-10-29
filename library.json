@@ -1,14 +1,13 @@
 {
   "name": "6 Channel Audio Selector",
-  "keywords": "PT2322, 6 Channel Audio Selector",
+  "keywords": "PT2323, 6 Channel Audio Selector",
   "description": "Princeton Technology - 6 Channel Audio Selector",
   "homepage": "https://labkit.ru/userfiles/file/documentation/Audioprocessor/pt2323.pdf",
-  "repository":
-  {
+  "repository": {
     "type": "git",
     "url": "https://github.com/JorgeBeserra/PT2323.git"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "frameworks": "arduino",
   "platforms": "*"
 }
