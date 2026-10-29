@@ -4,7 +4,7 @@
 #include "Wire.h"
 
 
-#define PT2323_LIB_VERSION                   (F("1.0.1"))
+#define PT2323_LIB_VERSION                   (F("1.0.2"))
 
 
 class PT2323
@@ -29,6 +29,8 @@ public:
   bool    muteRearLeft(bool mute);
   bool    muteRearRight(bool mute);
   bool    muteAll(bool mute);
+  // Bits: FL, FR, CT, SUB, SL, SR. Only channels selected by updateMask are sent.
+  bool    setMuteMask(uint8_t muteMask, uint8_t updateMask = 0x3F);
 
   
   bool    setSurround(bool enable);
@@ -42,6 +44,7 @@ public:
 
 private:
   int     write(const uint8_t value);
+  int     writeBytes(const uint8_t *values, size_t count);
 
   TwoWire  *_wire;
   uint8_t  _address   = 0x4A;

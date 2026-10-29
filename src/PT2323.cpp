@@ -17,6 +17,7 @@ bool PT2323::begin(uint32_t startupDelayMs)
   if (!setChannel(0)) return false;
   if (!setSurround(false)) return false;
   if (!setMixedChannel(false)) return false;
+  if (!setMuteMask(0)) return false;
   return muteAll(false);
 }
 
@@ -40,6 +41,7 @@ bool PT2323::setChannel(uint8_t channel)
 {
   if (channel > 3 && channel != 6)
   {
+    _error = -1;
     return false;
   }
 
@@ -153,16 +155,35 @@ int PT2323::getLastError()
   return e;
 }
 
-int PT2323::write(uint8_t cmd)
+bool PT2323::setMuteMask(uint8_t muteMask, uint8_t updateMask)
 {
-  if (_wire == nullptr) { _error = 4; return _error; }
-  _wire->beginTransmission(_address);
-  const size_t written = _wire->write(cmd);
-  _error = _wire->endTransmission();
-  if (written != 1 && _error == 0) _error = 1;
-  return _error;
+  if ((muteMask & 0xC0) || (updateMask & 0xC0)) { _error = -1; return false; }
+  uint8_t bytes[6];
+  size_t count = 0;
+  for (uint8_t channel = 0; channel < 6; ++channel) {
+    if (updateMask & (1U << channel)) {
+      bytes[count++] = 0xF0 | (channel << 1) | ((muteMask >> channel) & 1);
+    }
+  }
+  return writeBytes(bytes, count) == 0;
 }
 
+int PT2323::write(uint8_t cmd)
+{
+  return writeBytes(&cmd, 1);
+}
 
-
-
+int PT2323::writeBytes(const uint8_t *values, size_t count)
+{
+  if (_wire == nullptr) { _error = 4; return _error; }
+  if (!count) { _error = 0; return 0; }
+  _wire->beginTransmission(_address);
+  bool buffered = true;
+  for (size_t i = 0; i < count; ++i) {
+    if (_wire->write(values[i]) != 1) { buffered = false; break; }
+  }
+  if (!buffered) _wire->flush(); // ESP32: discard an incomplete TX batch.
+  _error = _wire->endTransmission();
+  if (!buffered && _error == 0) _error = 1;
+  return _error;
+}

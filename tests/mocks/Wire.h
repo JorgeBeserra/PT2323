@@ -10,12 +10,14 @@ public:
   std::vector<Transmission> transmissions;
   std::deque<uint8_t> results;
   bool acceptWrite = true;
+  size_t maxBytes = 128;
   void setClock(uint32_t hz) { clock = hz; }
   void beginTransmission(uint8_t address) { transmissions.push_back({address, {}}); }
   size_t write(uint8_t value) {
-    if (!acceptWrite) return 0;
+    if (!acceptWrite || transmissions.back().bytes.size() >= maxBytes) return 0;
     transmissions.back().bytes.push_back(value); return 1;
   }
+  void flush() { transmissions.back().bytes.clear(); }
   uint8_t endTransmission() {
     if (results.empty()) return 0;
     auto result = results.front(); results.pop_front(); return result;
